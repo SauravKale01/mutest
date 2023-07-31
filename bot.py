@@ -39,14 +39,20 @@ def get_random_character():
     """
 
     response = requests.post(ANILIST_BASE_URL, json={"query": query})
-    data = response.json()
 
-    character_data = data["data"]["Page"]["characters"][0]
-    character_name = character_data["name"]["full"]
-    character_image = character_data["image"]["medium"]
-    anime_series = character_data["media"]["nodes"][0]["title"]["romaji"]
+    if response.status_code == 200:
+        data = response.json()
 
-    return character_name, character_image, anime_series
+        if "data" in data and "Page" in data["data"] and "characters" in data["data"]["Page"]:
+            character_data = data["data"]["Page"]["characters"][0]
+            character_name = character_data["name"]["full"]
+            character_image = character_data["image"]["medium"]
+            anime_series = character_data["media"]["nodes"][0]["title"]["romaji"]
+
+            return character_name, character_image, anime_series
+
+    # If the API response is not as expected, return None or handle the error accordingly
+    return None, None, None
 
 @app.on_message(filters.command("start"))
 def start(_, message: Message):
@@ -60,26 +66,15 @@ def quiz(_, message: Message):
         SCORES[user_id] = 0
 
     character_name, character_image, anime_series = get_random_character()
-    message.reply_photo(character_image, caption="Who is this character?")
 
-    # Store the correct answer in the user's context for later comparison
-    message.context["correct_answer"] = character_name
-    message.context["anime_series"] = anime_series
+    if character_name and character_image and anime_series:
+        message.reply_photo(character_image, caption="Who is this character?")
 
-@app.on_message(filters.text)
-def check_answer(_, message: Message):
-    user_id = message.from_user.id
-
-    if "correct_answer" in message.context:
-        user_answer = message.text.strip()
-
-        # Compare the user's answer to the correct answer
-        if user_answer.lower() == message.context["correct_answer"].lower():
-            SCORES[user_id] += 1
-            message.reply_text(f"Correct! You guessed {message.context['correct_answer']} from {message.context['anime_series']}.")
-        else:
-            message.reply_text(f"Sorry, the correct answer was {message.context['correct_answer']} from {message.context['anime_series']}.")
-        message.context.pop("correct_answer", None)
+        # Store the correct answer in the user's context for later comparison
+        message.context["correct_answer"] = character_name
+        message.context["anime_series"] = anime_series
+    else:
+        message.reply_text("Oops! Something went wrong. Please try again later.")
 
     # Ask the next question
     quiz(_, message)
