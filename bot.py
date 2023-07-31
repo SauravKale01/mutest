@@ -23,6 +23,8 @@ user_data = {}
 last_character_id = None
 
 def get_random_character():
+    global last_character_id  # Declare the variable as global
+
     query = """
     query {
         Character(id: """ + str(random.randint(1, 10000)) + """) {
