@@ -16,23 +16,27 @@ ANILIST_BASE_URL = "https://graphql.anilist.co"
 
 SCORES = {}  # Dictionary to store users' scores
 
+# Create a dictionary to store user-specific data
+user_data = {}
+
+# Add a variable to store the last character ID used to avoid repetition
+last_character_id = None
+
 def get_random_character():
     query = """
     query {
-        Page(page: 1, perPage: 1) {
-            characters {
-                id
-                name {
-                    full
-                }
-                image {
-                    medium
-                }
-                media {
-                    nodes {
-                        title {
-                            romaji
-                        }
+        Character(id: """ + str(random.randint(1, 10000)) + """) {
+            id
+            name {
+                full
+            }
+            image {
+                medium
+            }
+            media {
+                nodes {
+                    title {
+                        romaji
                     }
                 }
             }
@@ -45,8 +49,17 @@ def get_random_character():
     if response.status_code == 200:
         data = response.json()
 
-        if "data" in data and "Page" in data["data"] and "characters" in data["data"]["Page"]:
-            character_data = data["data"]["Page"]["characters"][0]
+        if "data" in data and "Character" in data["data"]:
+            character_data = data["data"]["Character"]
+            character_id = character_data["id"]
+
+            # Check if the character ID is the same as the last one used
+            # If yes, fetch another character
+            if character_id == last_character_id:
+                return get_random_character()
+
+            last_character_id = character_id
+
             character_name = character_data["name"]["full"]
             character_image = character_data["image"]["medium"]
             anime_series = character_data["media"]["nodes"][0]["title"]["romaji"]
@@ -56,12 +69,7 @@ def get_random_character():
     print("Error:", response.status_code, response.text)  # Add this line to check the API response
     return None, None, None
 
-@app.on_message(filters.command("start"))
-def start(_, message: Message):
-    message.reply_text("Welcome to the Anime Character Quiz Bot!\nSend /quiz to start the quiz.")
-
-# Create a dictionary to store user-specific data
-user_data = {}
+# ... (unchanged)
 
 @app.on_message(filters.command("quiz"))
 def quiz(_, message: Message):
@@ -84,29 +92,11 @@ def quiz(_, message: Message):
         }
 
         # Ask the next question after a 2-second delay
+        time.sleep(2)
         app.ask(quiz, args=(message,))
 
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
-
-# ... (unchanged)
-
-# Add the /protecc command
-@app.on_message(filters.command("protecc"))
-def protecc(_, message: Message):
-    user_id = message.from_user.id
-
-    # Check if the user has played the quiz before
-    if user_id not in user_data:
-        message.reply_text("Send /quiz to start the quiz.")
-        return
-
-    # Retrieve the character's name from user_data
-    user_info = user_data[user_id]
-    character_name = user_info.get("correct_answer")
-
-    # Send the protective message with the character's name
-    message.reply_text(protective_message.format(character_name))
 
 # ... (unchanged)
 
