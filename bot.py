@@ -105,26 +105,6 @@ greeting_messages = [
     "Keep it up!",
 ]
 
-def get_anime_description(anime_series):
-    query = """
-    query ($anime: String) {
-        Media (search: $anime, type: ANIME) {
-            description
-        }
-    }
-    """
-
-    response = requests.post(ANILIST_BASE_URL, json={"query": query, "variables": {"anime": anime_series}})
-
-    if response.status_code == 200:
-        data = response.json()
-        if "data" in data and "Media" in data["data"] and data["data"]["Media"]:
-            return data["data"]["Media"]["description"]
-
-    return None
-
-# ... (Rest of the code)
-
 @app.on_message(filters.command("protecc"))
 def check_answer(_, message: Message):
     user_id = message.from_user.id
@@ -151,7 +131,7 @@ def check_answer(_, message: Message):
 
         if anime_description:
             message.reply_text(f"{greeting_message} This character is from {anime_series}. "
-                               f"About the anime: {anime_description}\nYour score: {SCORES[user_id]}")
+                               f"Your score: {SCORES[user_id]}")
         else:
             message.reply_text(f"{greeting_message} This character is from {anime_series}. "
                                f"Your score: {SCORES[user_id]}")
