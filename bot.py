@@ -45,7 +45,7 @@ def main():
     # Send a welcome message when the bot starts
     updater.bot.send_message(chat_id='-1001905486162',
                              text="Bot started. Send me the name of the anime character you want to know more about!")
-
+print("Bot started.")
     updater.start_polling()
     updater.idle()
 
