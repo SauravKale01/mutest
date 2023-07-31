@@ -94,5 +94,7 @@ def show_score(_, message: Message):
     else:
         message.reply_text("You haven't played the quiz yet. Send /quiz to start.")
 
+print("Bot Started")
+
 if __name__ == "__main__":
     app.run()
