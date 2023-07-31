@@ -59,6 +59,9 @@ def get_random_character():
 def start(_, message: Message):
     message.reply_text("Welcome to the Anime Character Quiz Bot!\nSend /quiz to start the quiz.")
 
+# Create a dictionary to store user-specific data
+user_data = {}
+
 @app.on_message(filters.command("quiz"))
 def quiz(_, message: Message):
     user_id = message.from_user.id
@@ -74,7 +77,7 @@ def quiz(_, message: Message):
         message.reply_photo(character_image, caption=caption)
 
         # Store the correct answer and anime series in the user_data dictionary
-        app.user_data[user_id] = {
+        user_data[user_id] = {
             "correct_answer": character_name,
             "anime_series": anime_series,
         }
@@ -90,14 +93,14 @@ def check_answer(_, message: Message):
     user_id = message.from_user.id
 
     # Check if the user has played the quiz before
-    if user_id not in app.user_data:
+    if user_id not in user_data:
         message.reply_text("Send /quiz to start the quiz.")
         return
 
     # Retrieve the correct answer and anime series from user_data
-    user_data = app.user_data[user_id]
-    correct_answer = user_data.get("correct_answer")
-    anime_series = user_data.get("anime_series")
+    user_info = user_data[user_id]
+    correct_answer = user_info.get("correct_answer")
+    anime_series = user_info.get("anime_series")
 
     # Check if the user's answer matches the correct answer
     if message.text.strip().lower() == correct_answer.lower():
