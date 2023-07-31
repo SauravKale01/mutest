@@ -3,9 +3,9 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 
 # Replace these with your own credentials
-API_ID = Your_API_ID
-API_HASH = 'Your_API_Hash'
-BOT_TOKEN = 'Your_Bot_Token'
+API_ID = 19099900
+API_HASH = '2b445de78e5baf012a0793e60bd4fbf5'
+BOT_TOKEN = '6206599982:AAFhXRwC0SnPCBK4WDwzdz7TbTsM2hccgZc'
 
 app = Client("anime_quiz_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
