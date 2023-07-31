@@ -51,7 +51,7 @@ def get_random_character():
 
             return character_name, character_image, anime_series
 
-    # If the API response is not as expected, return None or handle the error accordingly
+    print("Error:", response.status_code, response.text)  # Add this line to check the API response
     return None, None, None
 
 @app.on_message(filters.command("start"))
