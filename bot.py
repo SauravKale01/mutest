@@ -1,4 +1,5 @@
 import requests
+import time
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
@@ -68,7 +69,9 @@ def quiz(_, message: Message):
     character_name, character_image, anime_series = get_random_character()
 
     if character_name and character_image and anime_series:
-        message.reply_photo(character_image, caption="Who is this character?")
+        # Add the character's name in the caption along with the protective message
+        caption = f"Who is this character?\n{character_name}\n\n{protective_message}"
+        message.reply_photo(character_image, caption=caption)
 
         # Store the correct answer and anime series in the user_data dictionary
         app.user_data[user_id] = {
@@ -78,7 +81,11 @@ def quiz(_, message: Message):
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-@app.on_message(filters.text & ~filters.command)
+    # Introduce a slight delay (2 seconds) before asking the next question
+    time.sleep(2)
+    message.reply_text("Next question:")
+
+@app.on_message(filters.text & ~filters.command("quiz"))
 def check_answer(_, message: Message):
     user_id = message.from_user.id
 
@@ -112,6 +119,11 @@ def show_score(_, message: Message):
         message.reply_text(f"Your current score is: {score}")
     else:
         message.reply_text("You haven't played the quiz yet. Send /quiz to start.")
+
+protective_message = (
+    "I protecc, I attacc,\n"
+    "but most importantly, I got your bacc! 🛡️"
+)
 
 print("Bot Started")
 
