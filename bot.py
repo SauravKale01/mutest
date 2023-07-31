@@ -1,158 +1,53 @@
 import requests
-import time
-import random
-from pyrogram import Client, filters
-from pyrogram.types import Message
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# Replace these with your own credentials
-API_ID = 19099900
-API_HASH = '2b445de78e5baf012a0793e60bd4fbf5'
-BOT_TOKEN = '6206599982:AAFhXRwC0SnPCBK4WDwzdz7TbTsM2hccgZc'
+# Replace 'YOUR_TELEGRAM_BOT_TOKEN' with your Telegram Bot token
+TOKEN = '6206599982:AAFhXRwC0SnPCBK4WDwzdz7TbTsM2hccgZc'
 
-app = Client("anime_quiz_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Jikan API endpoint for character search
+JIKAN_API_URL = 'https://api.jikan.moe/v3/character/search/'
 
-# AniList API Base URL
-ANILIST_BASE_URL = "https://graphql.anilist.co"
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Hello! I'm your Anime Character Lookup bot. Just send me the name of the anime character you want to know more about!")
 
-SCORES = {}  # Dictionary to store users' scores
+def character_lookup(update, context):
+    character_name = update.message.text.strip()
 
-# Create a dictionary to store user-specific data
-user_data = {}
-
-# Add a variable to store the last character ID used to avoid repetition
-last_character_id = None
-
-def get_random_character():
-    global last_character_id  # Declare the variable as global
-
-    query = """
-    query {
-        Character(id: """ + str(random.randint(1, 10000)) + """) {
-            id
-            name {
-                full
-            }
-            image {
-                medium
-            }
-            media {
-                nodes {
-                    title {
-                        romaji
-                    }
-                    description
-                }
-            }
-        }
-    }
-    """
-
-    response = requests.post(ANILIST_BASE_URL, json={"query": query})
-
-    if response.status_code == 200:
-        data = response.json()
-
-        if "data" in data and "Character" in data["data"]:
-            character_data = data["data"]["Character"]
-            character_id = character_data["id"]
-
-            # Check if the character ID is the same as the last one used
-            # If yes, fetch another character
-            if character_id == last_character_id:
-                return get_random_character()
-
-            last_character_id = character_id
-
-            character_name = character_data["name"]["full"]
-            character_image = character_data["image"]["medium"]
-            anime_series = character_data["media"]["nodes"][0]["title"]["romaji"]
-            anime_description = character_data["media"]["nodes"][0]["description"]
-
-            return character_name, character_image, anime_series, anime_description
-
-    print("Error:", response.status_code, response.text)  # Add this line to check the API response
-    return None, None, None, None
-
-@app.on_message(filters.command("quiz"))
-def quiz(_, message: Message):
-    user_id = message.from_user.id
-
-    if user_id not in SCORES:
-        SCORES[user_id] = 0
-
-    character_name, character_image, anime_series, anime_description = get_random_character()
-
-    if character_name and character_image and anime_series and anime_description:
-        # Add the character's name in the caption without the protective message
-        caption = f"Who is this character?\n{character_name}"
-        message.reply_photo(character_image, caption=caption)
-
-        # Store the correct answer, anime series, and anime description in the user_data dictionary
-        user_data[user_id] = {
-            "correct_answer": character_name,
-            "anime_series": anime_series,
-            "anime_description": anime_description,
-        }
-
-    else:
-        message.reply_text("Oops! Something went wrong. Please try again later.")
-
-# ... (Rest of the code, unchanged)
-
-@app.on_message(filters.command("protecc"))
-def check_answer(_, message: Message):
-    user_id = message.from_user.id
-
-    # Check if the user has played the quiz before
-    if user_id not in user_data:
-        message.reply_text("Send /quiz to start the quiz.")
+    if not character_name:
+        update.message.reply_text("Please provide the name of the anime character you want to lookup.")
         return
 
-    # Retrieve the correct answer, anime series, and anime description from user_data
-    user_info = user_data[user_id]
-    correct_answer = user_info.get("correct_answer")
-    anime_series = user_info.get("anime_series")
-    anime_description = user_info.get("anime_description")
+    response = requests.get(f'{JIKAN_API_URL}{character_name}')
+    data = response.json()
 
-    # Check if the user's answer matches the correct answer
-    if message.text.strip().lower() == correct_answer.lower():
-        SCORES[user_id] += 1
+    if 'result' not in data or not data['result']:
+        update.message.reply_text("Sorry, I couldn't find any information about that character.")
+        return
 
-        # Choose a random greeting message
-        greeting_messages = [
-            "Well done!",
-            "Great job!",
-            "You got it right!",
-            "Amazing!",
-            "Keep it up!",
-        ]
-        greeting_message = random.choice(greeting_messages)
+    character = data['result'][0]
+    name = character['name']
+    url = character['url']
+    image_url = character['image_url']
+    description = character['about']
 
-        message.reply_text(f"{greeting_message} This character is from {anime_series}. "
-                           f"About the anime: {anime_description}\nYour score: {SCORES[user_id]}")
-    else:
-        message.reply_text(f"Wrong! This character is from {anime_series}. Your score: {SCORES[user_id]}")
+    message = f"**Character Name:** {name}\n\n**Description:** {description}\n\n[More Info]({url})"
+    
+    context.bot.send_photo(chat_id=update.effective_chat.id, photo=image_url, caption=message, parse_mode='Markdown')
 
-    # Ask the next question
-    quiz(_, message)
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-protective_message = (
-    "I protecc, I attacc,\n"
-    "but most importantly, I got your bacc! 🛡️\n"
-    "You answered: {}"
-)
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, character_lookup))
 
-@app.on_message(filters.command("score"))
-def show_score(_, message: Message):
-    user_id = message.from_user.id
+    # Send a welcome message when the bot starts
+    updater.bot.send_message(chat_id='-1001905486162',
+                             text="Bot started. Send me the name of the anime character you want to know more about!")
 
-    if user_id in SCORES:
-        score = SCORES[user_id]
-        message.reply_text(f"Your current score is: {score}")
-    else:
-        message.reply_text("You haven't played the quiz yet. Send /quiz to start.")
-
-print("Bot Started")
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
-    app.run()
+    main()
