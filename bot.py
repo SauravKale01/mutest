@@ -96,7 +96,70 @@ def quiz(_, message: Message):
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-# ... (unchanged)
+# List of greeting messages
+greeting_messages = [
+    "Well done!",
+    "Great job!",
+    "You got it right!",
+    "Amazing!",
+    "Keep it up!",
+]
+
+def get_anime_description(anime_series):
+    query = """
+    query ($anime: String) {
+        Media (search: $anime, type: ANIME) {
+            description
+        }
+    }
+    """
+
+    response = requests.post(ANILIST_BASE_URL, json={"query": query, "variables": {"anime": anime_series}})
+
+    if response.status_code == 200:
+        data = response.json()
+        if "data" in data and "Media" in data["data"] and data["data"]["Media"]:
+            return data["data"]["Media"]["description"]
+
+    return None
+
+# ... (Rest of the code)
+
+@app.on_message(filters.command("protecc"))
+def check_answer(_, message: Message):
+    user_id = message.from_user.id
+
+    # Check if the user has played the quiz before
+    if user_id not in user_data:
+        message.reply_text("Send /quiz to start the quiz.")
+        return
+
+    # Retrieve the correct answer and anime series from user_data
+    user_info = user_data[user_id]
+    correct_answer = user_info.get("correct_answer")
+    anime_series = user_info.get("anime_series")
+
+    # Check if the user's answer matches the correct answer
+    if message.text.strip().lower() == correct_answer.lower():
+        SCORES[user_id] += 1
+
+        # Choose a random greeting message
+        greeting_message = random.choice(greeting_messages)
+
+        # Get anime description using the AniList API
+        anime_description = get_anime_description(anime_series)
+
+        if anime_description:
+            message.reply_text(f"{greeting_message} This character is from {anime_series}. "
+                               f"About the anime: {anime_description}\nYour score: {SCORES[user_id]}")
+        else:
+            message.reply_text(f"{greeting_message} This character is from {anime_series}. "
+                               f"Your score: {SCORES[user_id]}")
+    else:
+        message.reply_text(f"Wrong! This character is from {anime_series}. Your score: {SCORES[user_id]}")
+
+    # Ask the next question
+    quiz(_, message)
 
 protective_message = (
     "I protecc, I attacc,\n"
