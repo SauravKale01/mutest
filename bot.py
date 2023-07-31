@@ -81,11 +81,13 @@ def quiz(_, message: Message):
             "correct_answer": character_name,
             "anime_series": anime_series,
         }
+        
+        # Ask the next question after a 2-second delay
+        app.ask(quiz, args=(message,))
+
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-    # Introduce a slight delay (2 seconds) before asking the next question
-    time.sleep(2)
 
 # The check_answer function remains unchanged.
 
