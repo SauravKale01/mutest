@@ -70,14 +70,38 @@ def quiz(_, message: Message):
     if character_name and character_image and anime_series:
         message.reply_photo(character_image, caption="Who is this character?")
 
-        # Store the correct answer in the user's context for later comparison
-        message.context["correct_answer"] = character_name
-        message.context["anime_series"] = anime_series
+        # Store the correct answer and anime series in the user_data dictionary
+        app.user_data[user_id] = {
+            "correct_answer": character_name,
+            "anime_series": anime_series,
+        }
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
+@app.on_message(filters.text & ~filters.command)
+def check_answer(_, message: Message):
+    user_id = message.from_user.id
+
+    # Check if the user has played the quiz before
+    if user_id not in app.user_data:
+        message.reply_text("Send /quiz to start the quiz.")
+        return
+
+    # Retrieve the correct answer and anime series from user_data
+    user_data = app.user_data[user_id]
+    correct_answer = user_data.get("correct_answer")
+    anime_series = user_data.get("anime_series")
+
+    # Check if the user's answer matches the correct answer
+    if message.text.strip().lower() == correct_answer.lower():
+        SCORES[user_id] += 1
+        message.reply_text(f"Correct! This character is from {anime_series}. Your score: {SCORES[user_id]}")
+    else:
+        message.reply_text(f"Wrong! This character is from {anime_series}. Your score: {SCORES[user_id]}")
+
     # Ask the next question
     quiz(_, message)
+
 
 @app.on_message(filters.command("score"))
 def show_score(_, message: Message):
