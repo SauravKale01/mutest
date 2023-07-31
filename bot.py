@@ -42,12 +42,16 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, character_lookup))
 
+    updater.start_polling()
+
+    # Get the last message sent to the bot
+    last_message = updater.bot.get_updates()[-1].message
+
     # Replace '<your_chat_id_here>' with your actual chat ID
-    chat_id = -1001905486162
+    chat_id = last_message.chat.id
     updater.bot.send_message(chat_id=chat_id,
                              text="Bot started. Send me the name of the anime character you want to know more about!")
 
-    updater.start_polling()
     updater.idle()
 
 if __name__ == "__main__":
