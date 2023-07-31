@@ -40,6 +40,7 @@ def get_random_character():
                     title {
                         romaji
                     }
+                    description
                 }
             }
         }
@@ -65,13 +66,12 @@ def get_random_character():
             character_name = character_data["name"]["full"]
             character_image = character_data["image"]["medium"]
             anime_series = character_data["media"]["nodes"][0]["title"]["romaji"]
+            anime_description = character_data["media"]["nodes"][0]["description"]
 
-            return character_name, character_image, anime_series
+            return character_name, character_image, anime_series, anime_description
 
     print("Error:", response.status_code, response.text)  # Add this line to check the API response
-    return None, None, None
-
-# ... (unchanged)
+    return None, None, None, None
 
 @app.on_message(filters.command("quiz"))
 def quiz(_, message: Message):
@@ -80,30 +80,24 @@ def quiz(_, message: Message):
     if user_id not in SCORES:
         SCORES[user_id] = 0
 
-    character_name, character_image, anime_series = get_random_character()
+    character_name, character_image, anime_series, anime_description = get_random_character()
 
-    if character_name and character_image and anime_series:
+    if character_name and character_image and anime_series and anime_description:
         # Add the character's name in the caption without the protective message
         caption = f"Who is this character?\n{character_name}"
         message.reply_photo(character_image, caption=caption)
 
-        # Store the correct answer and anime series in the user_data dictionary
+        # Store the correct answer, anime series, and anime description in the user_data dictionary
         user_data[user_id] = {
             "correct_answer": character_name,
             "anime_series": anime_series,
+            "anime_description": anime_description,
         }
-       
+
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-# List of greeting messages
-greeting_messages = [
-    "Well done!",
-    "Great job!",
-    "You got it right!",
-    "Amazing!",
-    "Keep it up!",
-]
+# ... (Rest of the code, unchanged)
 
 @app.on_message(filters.command("protecc"))
 def check_answer(_, message: Message):
@@ -114,27 +108,28 @@ def check_answer(_, message: Message):
         message.reply_text("Send /quiz to start the quiz.")
         return
 
-    # Retrieve the correct answer and anime series from user_data
+    # Retrieve the correct answer, anime series, and anime description from user_data
     user_info = user_data[user_id]
     correct_answer = user_info.get("correct_answer")
     anime_series = user_info.get("anime_series")
+    anime_description = user_info.get("anime_description")
 
     # Check if the user's answer matches the correct answer
     if message.text.strip().lower() == correct_answer.lower():
         SCORES[user_id] += 1
 
         # Choose a random greeting message
+        greeting_messages = [
+            "Well done!",
+            "Great job!",
+            "You got it right!",
+            "Amazing!",
+            "Keep it up!",
+        ]
         greeting_message = random.choice(greeting_messages)
 
-        # Get anime description using the AniList API
-        anime_description = get_anime_description(anime_series)
-
-        if anime_description:
-            message.reply_text(f"{greeting_message} This character is from {anime_series}. "
-                               f"Your score: {SCORES[user_id]}")
-        else:
-            message.reply_text(f"{greeting_message} This character is from {anime_series}. "
-                               f"Your score: {SCORES[user_id]}")
+        message.reply_text(f"{greeting_message} This character is from {anime_series}. "
+                           f"About the anime: {anime_description}\nYour score: {SCORES[user_id]}")
     else:
         message.reply_text(f"Wrong! This character is from {anime_series}. Your score: {SCORES[user_id]}")
 
@@ -143,10 +138,9 @@ def check_answer(_, message: Message):
 
 protective_message = (
     "I protecc, I attacc,\n"
-    "but most importantly, I got your bacc! 🛡️\n\n"
+    "but most importantly, I got your bacc! 🛡️\n"
     "You answered: {}"
 )
-
 
 @app.on_message(filters.command("score"))
 def show_score(_, message: Message):
