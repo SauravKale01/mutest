@@ -18,7 +18,7 @@ def get_random_character():
     query = """
     query {
         Page(page: 1, perPage: 1) {
-            characters: characters(isAdult: false) {
+            characters {
                 id
                 name {
                     full
