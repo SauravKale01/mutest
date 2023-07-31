@@ -73,7 +73,7 @@ def quiz(_, message: Message):
 
     if character_name and character_image and anime_series:
         # Add the character's name in the caption along with the protective message
-        caption = f"Who is this character?\n{character_name}"
+        caption = f"Who is this character?\n{character_name}\n\n{protective_message}"
         message.reply_photo(character_image, caption=caption)
 
         # Store the correct answer and anime series in the user_data dictionary
@@ -84,8 +84,24 @@ def quiz(_, message: Message):
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-@app.on_message(filters.text & ~filters.command("quiz"))
-def check_answer(_, message: Message):
+    # Introduce a slight delay (2 seconds) before asking the next question
+    time.sleep(2)
+
+# The check_answer function remains unchanged.
+
+@app.on_message(filters.command("score"))
+def show_score(_, message: Message):
+    user_id = message.from_user.id
+
+    if user_id in SCORES:
+        score = SCORES[user_id]
+        message.reply_text(f"Your current score is: {score}")
+    else:
+        message.reply_text("You haven't played the quiz yet. Send /quiz to start.")
+
+# Add the /protecc command
+@app.on_message(filters.command("protecc"))
+def protecc(_, message: Message):
     user_id = message.from_user.id
 
     # Check if the user has played the quiz before
@@ -93,20 +109,20 @@ def check_answer(_, message: Message):
         message.reply_text("Send /quiz to start the quiz.")
         return
 
-    # Retrieve the correct answer and anime series from user_data
+    # Retrieve the character's name from user_data
     user_info = user_data[user_id]
-    correct_answer = user_info.get("correct_answer")
-    anime_series = user_info.get("anime_series")
+    character_name = user_info.get("correct_answer")
 
-    # Check if the user's answer matches the correct answer
-    if message.text.strip().lower() == correct_answer.lower():
-        SCORES[user_id] += 1
-        message.reply_text(f"Correct! This character is from {anime_series}. Your score: {SCORES[user_id]}")
-    else:
-        message.reply_text(f"Wrong! This character is from {anime_series}. Your score: {SCORES[user_id]}")
+    # Send the protective message with the character's name
+    message.reply_text(protective_message.format(character_name))
 
-    # Ask the next question
-    quiz(_, message)
+# ... (unchanged)
+
+protective_message = (
+    "I protecc, I attacc,\n"
+    "but most importantly, I got your bacc! 🛡️\n\n"
+    "You answered: {}"
+)
 
 
 @app.on_message(filters.command("score"))
