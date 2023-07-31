@@ -42,10 +42,11 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, character_lookup))
 
-    # Send a welcome message when the bot starts
-    updater.bot.send_message(chat_id='-1001905486162',
+    # Replace '<your_chat_id_here>' with your actual chat ID
+    chat_id = -1001905486162
+    updater.bot.send_message(chat_id=chat_id,
                              text="Bot started. Send me the name of the anime character you want to know more about!")
-print("Bot started.")
+
     updater.start_polling()
     updater.idle()
 
