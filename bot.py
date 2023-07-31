@@ -72,8 +72,8 @@ def quiz(_, message: Message):
     character_name, character_image, anime_series = get_random_character()
 
     if character_name and character_image and anime_series:
-        # Add the character's name in the caption along with the protective message
-        caption = f"Who is this character?\n{character_name}\n\n{protective_message}"
+        # Add the character's name in the caption without the protective message
+        caption = f"Who is this character?\n{character_name}"
         message.reply_photo(character_image, caption=caption)
 
         # Store the correct answer and anime series in the user_data dictionary
@@ -81,25 +81,14 @@ def quiz(_, message: Message):
             "correct_answer": character_name,
             "anime_series": anime_series,
         }
-        
+
         # Ask the next question after a 2-second delay
         app.ask(quiz, args=(message,))
 
     else:
         message.reply_text("Oops! Something went wrong. Please try again later.")
 
-
-# The check_answer function remains unchanged.
-
-@app.on_message(filters.command("score"))
-def show_score(_, message: Message):
-    user_id = message.from_user.id
-
-    if user_id in SCORES:
-        score = SCORES[user_id]
-        message.reply_text(f"Your current score is: {score}")
-    else:
-        message.reply_text("You haven't played the quiz yet. Send /quiz to start.")
+# ... (unchanged)
 
 # Add the /protecc command
 @app.on_message(filters.command("protecc"))
